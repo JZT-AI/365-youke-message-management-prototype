@@ -137,17 +137,11 @@
     if (systemNotificationEnabled || notificationHintDismissed) return '';
     return `<aside class="youke-notification-hint" aria-label="消息通知权限提示">
       <button type="button" class="youke-hint-close" data-dismiss-notification-hint aria-label="关闭提示">${icon('close',17)}</button>
-      <button type="button" class="youke-hint-open" data-go="messageNotificationSettings" aria-label="开启消息通知">
+      <button type="button" class="youke-hint-open" data-go="notifications" aria-label="开启消息通知">
         <span>打开消息通知，重要消息不错过</span><strong>${icon('bell',13)}开启</strong>
       </button>
     </aside>`;
   }
-  pages.messageNotificationSettings = () => screen(`<div class="content youke-system-settings">
-    <div class="card"><b>365有客App</b><p>系统设置演示</p>
-    <button type="button" role="switch" aria-label="允许通知" aria-checked="${systemNotificationEnabled}" data-toggle-system-notification>
-      <span>允许通知</span><span class="switch ${systemNotificationEnabled?'on':''}" aria-hidden="true"></span>
-    </button></div>
-  </div>`,'通知设置');
   pages.messageManagement = () => {
     const template = document.createElement('template');
     template.innerHTML = baseCustomerMessages();
@@ -188,7 +182,6 @@
   meta.messageManagement = ['消息管理','会话和三类通知入口',['最近一条消息','未读提示'],'点击顶部图标切换列表。'];
   meta.messageMiniProgram = ['365获客宝','小程序跳转示例',['指定页面路径'],'原型模拟打开小程序目标页。'];
   meta.messages = meta.messageManagement;
-  meta.messageNotificationSettings = ['通知设置','手机系统通知开关演示',['允许通知'],'返回消息页后按系统权限更新提示。'];
   meta.messageCategory = ['站内信分类','查看该分类的站内信',['图文消息','按时间倒序'],'展示本分类已收到的站内信。'];
   const group = groups.find(item => item.name === '消息中心');
   if (group) {
@@ -199,11 +192,6 @@
     if (event.target.closest('[data-dismiss-notification-hint]')) {
       notificationHintDismissed = true;
       screenEl.querySelector('.youke-notification-hint')?.remove();
-      return;
-    }
-    if (event.target.closest('[data-toggle-system-notification]')) {
-      setSystemNotificationEnabled(!systemNotificationEnabled);
-      go('messageNotificationSettings',false);
       return;
     }
     const shortcut = event.target.closest('[data-message-shortcut]');
