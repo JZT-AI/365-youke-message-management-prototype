@@ -18,7 +18,7 @@
 .youke-category-copy strong,.youke-mixed-list .message-copy b{font-size:14px;font-weight:650;line-height:19px}
 .youke-category-copy small,.youke-mixed-list .message-copy p{color:#657187;font-size:12px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 16px 0 0;padding:0}
 .youke-category-row time,.youke-mixed-list .message-list-row time{position:absolute;top:14px;right:13px;color:#657187;font-size:10px;line-height:14px;white-space:nowrap}
-.youke-category-unread{position:absolute;left:46px;top:10px;width:9px;height:9px;box-sizing:border-box;border:1px solid #fff;border-radius:50%;background:#ef4545}
+.youke-category-unread{display:inline-block;width:8px;height:8px;margin-left:6px;border-radius:50%;background:#ef4545;vertical-align:1px}
 .youke-category-inbox{min-height:calc(100% - 56px)}
 
 .youke-category-inbox{background:#f4f5f7;padding:4px 13px 24px}

@@ -6,6 +6,8 @@
   ];
   const [followUp, housing, coin, audit, announcement] = categories.map(([name]) => name);
   const conversationCategories = [announcement, followUp];
+  const announcementDemoId = 'city-event-deadline';
+  const followUpDemoId = 'customer-follow-up-demo';
   const coinLedgerRoute = '/wallet/records';
   const walletRoute = '/wallet';
   const appRouteScreens = new Map([[walletRoute,'wallet'],[coinLedgerRoute,'coinFlow']]);
@@ -23,7 +25,8 @@
     {id:'coin-platform', category:coin, title:'有客币-平台赠送', body:'平台赠送的50有客币已到账。', appRoute:coinLedgerRoute},
     {id:'audit-profile-reject', category:audit, title:'资料修改审核未通过', body:'证件照片信息不完整，请补充清晰照片后重新提交。', app:'messageAuditResult', auditType:'资料修改', failureReason:'证件照片信息不完整。'},
     {id:'coin-debit', category:coin, title:'有客币-购买线索扣减', body:'购买线索扣减50有客币，扣减后余额为1,260有客币。', appRoute:coinLedgerRoute},
-    {id:'city-event-deadline', category:announcement, time:'2026-11-12 10:00', title:'西安经纪人业务交流会报名提醒', body:'报名将于11月18日18:00截止，已报名的经纪人可在活动页查看安排。', path:'pages/events/detail?id=xa-20261120'},
+    {id:announcementDemoId, category:announcement, time:'2026-11-12 10:00', title:'西安经纪人业务交流会报名提醒', body:'报名将于11月18日18:00截止，已报名的经纪人可在活动页查看安排。', path:'pages/events/detail?id=xa-20261120'},
+    {id:followUpDemoId, category:followUp, time:'2026-11-12 09:45', title:'客户林小姐待跟进', body:'林小姐咨询了曲江三室房源，请及时跟进。'},
   ].map((row, index) => {
     const day = String(10 - Math.floor(index / 3)).padStart(2, '0');
     const time = ['10:20','09:45','09:10'][index % 3];
@@ -37,12 +40,24 @@
   let listScroll = 0;
   let categoryScroll = 0;
   let notificationHintDismissed = false;
+  const readStorageKey = 'youke-message-demo-read';
   let read = new Set();
-  try { read = new Set(JSON.parse(localStorage.getItem('youke-message-demo-read') || '[]')); } catch {}
+  try { read = new Set(JSON.parse(localStorage.getItem(readStorageKey) || '[]')); } catch {}
+  const saveRead = () => {
+    try { localStorage.setItem(readStorageKey, JSON.stringify([...read])); } catch {}
+  };
+  const demoUrl = new URL(location.href);
+  if (demoUrl.searchParams.get('demo') === 'unread') {
+    read.delete(announcementDemoId);
+    read.delete(followUpDemoId);
+    saveRead();
+    demoUrl.searchParams.delete('demo');
+    history.replaceState(history.state, '', demoUrl);
+  }
   const safe = escapePlainText;
   const markRead = id => {
     read.add(id);
-    try { localStorage.setItem('youke-message-demo-read', JSON.stringify([...read])); } catch {}
+    saveRead();
   };
   const getRows = () => {
     if (selectedCity !== 'xian') return [];
@@ -53,18 +68,16 @@
     ? ['lin', 'zhou', 'wang'].reduce((count, key) => count + (isCustomerBlocked(key) ? 0 : roundUnread[key]), 0)
     : 0;
   const unreadNotice = row => !read.has(row.id);
-  const unreadShortcut = (name, messages) => name
-    ? messages.some(row => row.category === name && unreadNotice(row))
-    : unreadConversationCount() > 0 || messages.some(row => conversationCategories.includes(row.category) && unreadNotice(row));
-  window.YoukeMessageBadge = () => unreadConversationCount() + getRows().filter(unreadNotice).length;
+  const conversationUnreadCount = messages => unreadConversationCount()
+    + messages.filter(row => conversationCategories.includes(row.category) && unreadNotice(row)).length;
+  window.YoukeMessageBadge = () => conversationUnreadCount(getRows());
   function syncUnreadIndicators() {
-    const messages = getRows();
-    for (const dot of screenEl.querySelectorAll('.youke-shortcut-unread')) {
-      dot.hidden = !unreadShortcut(dot.closest('[data-message-shortcut]').dataset.messageShortcut, messages);
-    }
+    const hasUnread = Boolean(window.YoukeMessageBadge());
+    const conversationDot = screenEl.querySelector('.youke-shortcut-unread');
+    if (conversationDot) conversationDot.hidden = !hasUnread;
     const bottomDot = screenEl.querySelector('.bottom [data-go="messageManagement"] .bottom-badge');
     if (bottomDot) {
-      bottomDot.hidden = !window.YoukeMessageBadge();
+      bottomDot.hidden = !hasUnread;
       bottomDot.setAttribute('role', 'img');
       bottomDot.setAttribute('aria-label', '有未读消息');
     }
@@ -129,9 +142,8 @@
         name,time:latest?.time||'',
         html:`<button type="button" class="youke-category-row" data-notice-category="${safe(name)}">
           <span class="youke-category-icon ${tone}" aria-hidden="true">${icon(symbol,21)}</span>
-          <span class="youke-category-copy"><strong>${safe(name)}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
+          <span class="youke-category-copy"><strong>${safe(name)}${unread?'<i class="youke-category-unread" role="img" aria-label="有未读站内信"></i>':''}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
           ${latest?`<time>${safe(displayTime(latest.time))}</time>`:''}
-          ${unread?'<i class="youke-category-unread" role="img" aria-label="有未读站内信"></i>':''}
         </button>`
       };
     });
@@ -141,12 +153,13 @@
     ['房源',housing,'home','green'], ['审核',audit,'shield','purple'],
   ];
   function messageShortcuts(activeCategory, messages) {
-    return `<nav class="youke-message-shortcuts" aria-label="消息分类">${shortcuts.map(([label,name,symbol,tone])=>{
-      return `<button type="button" data-message-shortcut="${safe(name)}" aria-pressed="${name===activeCategory}">
+    const hasUnread = Boolean(conversationUnreadCount(messages));
+    return `<nav class="youke-message-shortcuts" aria-label="消息分类">${shortcuts.map(([label,name,symbol,tone])=>
+      `<button type="button" data-message-shortcut="${safe(name)}" aria-pressed="${name===activeCategory}">
         <span class="youke-category-icon ${tone}" aria-hidden="true">${icon(symbol,21)}</span>
-        <span class="youke-shortcut-label">${label}<i class="youke-shortcut-unread" role="img" aria-label="有未读消息"${unreadShortcut(name,messages)?'':' hidden'}></i></span>
-      </button>`;
-    }).join('')}</nav>`;
+        <span class="youke-shortcut-label">${label}${name ? '' : `<i class="youke-shortcut-unread" role="img" aria-label="有未读消息"${hasUnread?'':' hidden'}></i>`}</span>
+      </button>`
+    ).join('')}</nav>`;
   }
   function notificationHint() {
     if (systemNotificationEnabled || notificationHintDismissed) return '';
