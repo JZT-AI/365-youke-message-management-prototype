@@ -23,10 +23,11 @@
     {id:'coin-platform', category:coin, title:'有客币-平台赠送', body:'平台赠送的50有客币已到账。', appRoute:coinLedgerRoute},
     {id:'audit-profile-reject', category:audit, title:'资料修改审核未通过', body:'证件照片信息不完整，请补充清晰照片后重新提交。', app:'messageAuditResult', auditType:'资料修改', failureReason:'证件照片信息不完整。'},
     {id:'coin-debit', category:coin, title:'有客币-购买线索扣减', body:'购买线索扣减50有客币，扣减后余额为1,260有客币。', appRoute:coinLedgerRoute},
+    {id:'city-event-deadline', category:announcement, time:'2026-11-12 10:00', title:'西安经纪人业务交流会报名提醒', body:'报名将于11月18日18:00截止，已报名的经纪人可在活动页查看安排。', path:'pages/events/detail?id=xa-20261120'},
   ].map((row, index) => {
     const day = String(10 - Math.floor(index / 3)).padStart(2, '0');
     const time = ['10:20','09:45','09:10'][index % 3];
-    return {...row,time:'2026-11-'+day+' '+time};
+    return {...row,time:row.time || '2026-11-'+day+' '+time};
   });
   let category = '';
   let city = selectedCity;
