@@ -18,7 +18,7 @@
 .youke-category-copy strong,.youke-mixed-list .message-copy b{font-size:14px;font-weight:650;line-height:19px}
 .youke-category-copy small,.youke-mixed-list .message-copy p{color:#657187;font-size:12px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 16px 0 0;padding:0}
 .youke-category-row time,.youke-mixed-list .message-list-row time{position:absolute;top:14px;right:13px;color:#657187;font-size:10px;line-height:14px;white-space:nowrap}
-.youke-category-unread{position:absolute;right:15px;bottom:16px;width:6px;height:6px;border-radius:50%;background:#ef4545}
+.youke-category-unread{position:absolute;left:46px;top:10px;width:9px;height:9px;box-sizing:border-box;border:1px solid #fff;border-radius:50%;background:#ef4545}
 .youke-category-inbox{min-height:calc(100% - 56px)}
 
 .youke-category-inbox{background:#f4f5f7;padding:4px 13px 24px}
@@ -48,5 +48,8 @@
 .youke-message-shortcuts button:focus-visible{outline:2px solid var(--brand,#ff6b2c);outline-offset:-2px}
 .youke-message-shortcuts .youke-category-icon{display:inline-flex;width:auto;height:auto;background:none;color:inherit;border-radius:0}
 .youke-message-shortcuts .youke-category-icon svg{width:16px;height:16px}
-.youke-shortcut-unread{position:absolute;top:8px;right:10px;width:7px;height:7px;border:1px solid white;border-radius:50%;background:#ef4545}
+.youke-shortcut-label{position:relative}
+.youke-shortcut-unread{position:absolute;top:-3px;right:-8px;width:7px;height:7px;box-sizing:border-box;border:1px solid #fff;border-radius:50%;background:#ef4545}
+.bottom [data-go="messageManagement"] .bottom-badge{top:1px;left:calc(50% + 6px);right:auto;min-width:0;width:9px;height:9px;box-sizing:border-box;padding:0;border-width:1px;font-size:0;line-height:0}
+.bottom [data-go="messageManagement"] .bottom-badge[hidden]{display:none}
 .youke-message-shortcuts + .youke-mixed-list,.youke-message-shortcuts + .youke-category-inbox{min-height:calc(100% - 162px)}

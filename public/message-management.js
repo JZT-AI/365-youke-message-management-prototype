@@ -5,6 +5,7 @@
     ['有客币提醒', 'coin', 'amber'], ['审核通知', 'shield', 'purple'], ['平台公告', 'bell', 'blue'],
   ];
   const [followUp, housing, coin, audit, announcement] = categories.map(([name]) => name);
+  const conversationCategories = [announcement, followUp];
   const coinLedgerRoute = '/wallet/records';
   const walletRoute = '/wallet';
   const appRouteScreens = new Map([[walletRoute,'wallet'],[coinLedgerRoute,'coinFlow']]);
@@ -47,10 +48,26 @@
     const uploads = window.YoukeHousingNoticeDemo?.rows() || [];
     return [...uploads.map(item => ({...item,category:housing})), ...rows].sort((a,b)=>b.time.localeCompare(a.time)||a.id.localeCompare(b.id));
   };
-  window.YoukeMessageBadge = () => {
-    const count = getRows().filter(row=>!read.has(row.id)).length;
-    return count > 99 ? '99+' : count;
-  };
+  const unreadConversationCount = () => selectedCity === 'xian'
+    ? ['lin', 'zhou', 'wang'].reduce((count, key) => count + (isCustomerBlocked(key) ? 0 : roundUnread[key]), 0)
+    : 0;
+  const unreadNotice = row => !read.has(row.id);
+  const unreadShortcut = (name, messages) => name
+    ? messages.some(row => row.category === name && unreadNotice(row))
+    : unreadConversationCount() > 0 || messages.some(row => conversationCategories.includes(row.category) && unreadNotice(row));
+  window.YoukeMessageBadge = () => unreadConversationCount() + getRows().filter(unreadNotice).length;
+  function syncUnreadIndicators() {
+    const messages = getRows();
+    for (const dot of screenEl.querySelectorAll('.youke-shortcut-unread')) {
+      dot.hidden = !unreadShortcut(dot.closest('[data-message-shortcut]').dataset.messageShortcut, messages);
+    }
+    const bottomDot = screenEl.querySelector('.bottom [data-go="messageManagement"] .bottom-badge');
+    if (bottomDot) {
+      bottomDot.hidden = !window.YoukeMessageBadge();
+      bottomDot.setAttribute('role', 'img');
+      bottomDot.setAttribute('aria-label', '有未读消息');
+    }
+  }
   const displayTime = time => time.replace(/^\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2}).*$/, (_, month, day, clock)=>Number(month)+'月'+Number(day)+'日 '+clock);
   const active = () => getRows().find(row => row.id === selectedId);
   const cover = row => row.image ? '<img class="youke-notice-cover" src="message-event-cover.svg" alt="西安经纪人业务交流会活动海报">' : '';
@@ -83,11 +100,9 @@
         markRead(entry.target.dataset.noticeId);
         entry.target.removeAttribute('data-notice-unread');
         entry.target.querySelector('.youke-card-unread')?.remove();
-        if (!getRows().some(row=>row.category===category&&!read.has(row.id))) {
-          screenEl.querySelector('[data-message-shortcut][aria-pressed="true"] .youke-shortcut-unread')?.remove();
-        }
         observer.unobserve(entry.target);
       }
+      syncUnreadIndicators();
     },{root:screenEl,threshold:.5});
     screenEl.querySelectorAll('[data-notice-unread]').forEach(card=>readObserver.observe(card));
   }
@@ -115,7 +130,7 @@
           <span class="youke-category-icon ${tone}" aria-hidden="true">${icon(symbol,21)}</span>
           <span class="youke-category-copy"><strong>${safe(name)}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
           ${latest?`<time>${safe(displayTime(latest.time))}</time>`:''}
-          ${unread?'<i class="youke-category-unread" aria-label="有未读站内信"></i>':''}
+          ${unread?'<i class="youke-category-unread" role="img" aria-label="有未读站内信"></i>':''}
         </button>`
       };
     });
@@ -126,10 +141,9 @@
   ];
   function messageShortcuts(activeCategory, messages) {
     return `<nav class="youke-message-shortcuts" aria-label="消息分类">${shortcuts.map(([label,name,symbol,tone])=>{
-      const unread = name && messages.some(row=>row.category===name&&!read.has(row.id));
       return `<button type="button" data-message-shortcut="${safe(name)}" aria-pressed="${name===activeCategory}">
         <span class="youke-category-icon ${tone}" aria-hidden="true">${icon(symbol,21)}</span>
-        <span>${label}</span>${unread?'<i class="youke-shortcut-unread" aria-label="有未读站内信"></i>':''}
+        <span class="youke-shortcut-label">${label}<i class="youke-shortcut-unread" role="img" aria-label="有未读消息"${unreadShortcut(name,messages)?'':' hidden'}></i></span>
       </button>`;
     }).join('')}</nav>`;
   }
@@ -238,6 +252,7 @@
     baseGo(id, push);
     if (id === 'messageManagement' || id === 'messages') screenEl.scrollTop = listScroll;
     if (id === 'messageCategory') screenEl.scrollTop = categoryScroll;
+    syncUnreadIndicators();
     observeReadCards();
   };
 })();
