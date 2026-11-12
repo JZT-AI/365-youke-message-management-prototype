@@ -138,19 +138,18 @@
       return {time, html:entry.outerHTML};
     });
   }
-  function categoryRows(messages) {
-    return categories.map(([name,symbol,tone]) => {
+  function pinnedCategoryRows(messages) {
+    return conversationCategories.flatMap(name => {
       const visible = messages.filter(row=>row.category===name);
       const latest = visible[0];
+      if (!latest) return [];
+      const [,symbol,tone] = categories.find(([categoryName])=>categoryName===name);
       const unreadCount = visible.filter(unreadNotice).length;
-      return {
-        name,time:latest?.time||'',
-        html:`<button type="button" class="youke-category-row" data-notice-category="${safe(name)}">
+      return [`<button type="button" class="youke-category-row" data-notice-category="${safe(name)}">
           <span class="youke-category-icon ${tone}"><span aria-hidden="true">${icon(symbol,21)}</span>${unreadBadge(unreadCount)}</span>
-          <span class="youke-category-copy"><strong>${safe(name)}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
-          ${latest?`<time>${safe(displayTime(latest.time))}</time>`:''}
-        </button>`
-      };
+          <span class="youke-category-copy"><strong>${safe(name)}</strong><small>${safe(latest.title)}</small></span>
+          <time>${safe(displayTime(latest.time))}</time>
+        </button>`];
     });
   }
   const shortcuts = [
@@ -180,13 +179,10 @@
     template.innerHTML = baseCustomerMessages();
     const conversations = selectedCity==='xian' ? conversationRows(template) : [];
     const messages = getRows();
-    const summaries = categoryRows(messages);
-    const pinned = summaries.find(row=>row.name===announcement);
-    const followUpSummary = summaries.find(row=>row.name===followUp);
-    const byTime = conversations.sort((a,b)=>b.time.localeCompare(a.time));
-    const rows = [pinned,followUpSummary,...byTime];
     const blocked = selectedCity==='xian' ? template.content.querySelector('.blocked-entry') : null;
-    return screen(`${messageShortcuts('',messages)}<div class="youke-mixed-list" aria-label="消息列表">${rows.map(row=>row.html).join('')}${blocked?.outerHTML||''}</div>${notificationHint()}`,'消息',{back:false,bottom:'messageManagement'});
+    const byTime = conversations.sort((a,b)=>b.time.localeCompare(a.time)).map(row=>row.html);
+    const list = [...pinnedCategoryRows(messages),...byTime,blocked?.outerHTML].join('');
+    return screen(`${messageShortcuts('',messages)}<div class="youke-mixed-list" aria-label="消息列表">${list || '<div class="youke-inbox-empty">暂无消息</div>'}</div>${notificationHint()}`,'消息',{back:false,bottom:'messageManagement'});
   };
   pages.messages = pages.messageManagement;
   pages.messageCategory = () => {
