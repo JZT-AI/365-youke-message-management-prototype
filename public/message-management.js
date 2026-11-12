@@ -123,6 +123,9 @@
   const baseCustomerMessages = pages.messages;
   const demoConversationTimes = {lin:'2026-11-10 10:30',zhou:'2026-11-10 09:30',wang:'2026-11-07 08:27'};
   const messageClock = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',dateStyle:'short',timeStyle:'medium'});
+  const unreadBadge = count => count > 0
+    ? `<span class="youke-avatar-unread" role="img" aria-label="${count}条未读消息">${count > 99 ? '99+' : count}</span>`
+    : '';
   function conversationRows(template) {
     return Array.from(template.content.querySelectorAll('.swipe-conversation'), entry => {
       const key = entry.dataset.customer;
@@ -130,6 +133,8 @@
       const time = latest?.createdAt ? messageClock.format(latest.createdAt) : demoConversationTimes[key] || '';
       const timeElement = entry.querySelector('time');
       if (timeElement && time) timeElement.textContent = displayTime(time);
+      entry.querySelector('.unread-count')?.remove();
+      entry.querySelector('.real-avatar')?.insertAdjacentHTML('beforeend',unreadBadge(roundUnread[key]));
       return {time, html:entry.outerHTML};
     });
   }
@@ -137,12 +142,12 @@
     return categories.map(([name,symbol,tone]) => {
       const visible = messages.filter(row=>row.category===name);
       const latest = visible[0];
-      const unread = visible.some(row=>!read.has(row.id));
+      const unreadCount = visible.filter(unreadNotice).length;
       return {
         name,time:latest?.time||'',
         html:`<button type="button" class="youke-category-row" data-notice-category="${safe(name)}">
-          <span class="youke-category-icon ${tone}" aria-hidden="true">${icon(symbol,21)}</span>
-          <span class="youke-category-copy"><strong>${safe(name)}${unread?'<i class="youke-category-unread" role="img" aria-label="有未读站内信"></i>':''}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
+          <span class="youke-category-icon ${tone}"><span aria-hidden="true">${icon(symbol,21)}</span>${unreadBadge(unreadCount)}</span>
+          <span class="youke-category-copy"><strong>${safe(name)}</strong><small>${safe(latest?.title||'暂无消息')}</small></span>
           ${latest?`<time>${safe(displayTime(latest.time))}</time>`:''}
         </button>`
       };
